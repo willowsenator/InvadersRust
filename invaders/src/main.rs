@@ -8,6 +8,8 @@ use crossterm::cursor::{Hide, Show};
 use crossterm::event::{Event, KeyCode};
 use crossterm::terminal::{EnterAlternateScreen, LeaveAlternateScreen};
 use invaders::{frame, render};
+use invaders::frame::Drawable;
+use invaders::player::Player;
 
 fn main() -> Result<(), Box<dyn Error>>{
     let mut audio = Audio::new();
@@ -43,14 +45,17 @@ fn main() -> Result<(), Box<dyn Error>>{
         }
     });
 
+    let mut player = Player::new();
     // Game loop
     'gameLoop: loop {
         // Init every frame
-        let current_frame = frame::new_frame();
+        let mut current_frame = frame::new_frame();
         // Input
         while event::poll(Duration::default())? {
             if let Event::Key(key_event) = event::read()? {
                 match key_event.code {
+                    KeyCode::Left | KeyCode::Char('a') => player.move_left(),
+                    KeyCode::Right | KeyCode::Char('d') => player.move_right(),
                     KeyCode::Esc | KeyCode::Char('q') => {
                         audio.play("lose");
                         break 'gameLoop;
@@ -60,6 +65,7 @@ fn main() -> Result<(), Box<dyn Error>>{
             }
         }
         // Draw and render
+        player.draw(&mut current_frame);
         let _ = render_tx.send(current_frame);
         thread::sleep(Duration::from_millis(1));
     }
