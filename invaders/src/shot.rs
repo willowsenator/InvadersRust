@@ -34,6 +34,18 @@ impl Shot {
         self.timer = Timer::from_millis(250);
     }
 
+    pub fn is_exploding(&self) -> bool {
+        self.exploding
+    }
+
+    pub fn get_x(&self) -> usize {
+        self.x
+    }
+
+    pub fn get_y(&self) -> usize {
+        self.y
+    }
+
     pub fn dead(&self) -> bool {
         (self.exploding && self.timer.ready) || (self.y == 0)
     }
