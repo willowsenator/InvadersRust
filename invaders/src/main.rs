@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::{io, thread};
 use std::sync::mpsc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use rusty_audio::Audio;
 use crossterm::{event, ExecutableCommand, terminal};
 use crossterm::cursor::{Hide, Show};
@@ -45,17 +45,26 @@ fn main() -> Result<(), Box<dyn Error>>{
         }
     });
 
-    let mut player = Player::new();
     // Game loop
+    let mut player = Player::new();
+    let mut instant = Instant::now();
     'gameLoop: loop {
-        // Init every frame
+        // Per frame init
+        let delta = instant.elapsed();
+        instant = Instant::now();
         let mut current_frame = frame::new_frame();
+
         // Input
         while event::poll(Duration::default())? {
             if let Event::Key(key_event) = event::read()? {
                 match key_event.code {
                     KeyCode::Left | KeyCode::Char('a') => player.move_left(),
                     KeyCode::Right | KeyCode::Char('d') => player.move_right(),
+                    KeyCode::Char(' ') | KeyCode::Enter => {
+                        if player.shoot() {
+                            audio.play("pew");
+                        }
+                    }
                     KeyCode::Esc | KeyCode::Char('q') => {
                         audio.play("lose");
                         break 'gameLoop;
@@ -64,6 +73,11 @@ fn main() -> Result<(), Box<dyn Error>>{
                 }
             }
         }
+
+        // Updates
+        player.update(delta);
+
+
         // Draw and render
         player.draw(&mut current_frame);
         let _ = render_tx.send(current_frame);
